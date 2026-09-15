@@ -12,7 +12,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../../context/AppContext';
 import { PriorityBadge, StatusBadge } from '../../components/StatusBadge';
-import { StepTracker } from '../../components/StepTracker';
 
 export const ComplaintDetailScreen: React.FC = () => {
   const { activeComplaint, sendUserReply, setCurrentScreen } = useApp();
@@ -21,9 +20,9 @@ export const ComplaintDetailScreen: React.FC = () => {
   if (!activeComplaint) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No complaint selected.</Text>
-        <TouchableOpacity style={styles.backBtn} onPress={() => setCurrentScreen('USER_HOME')}>
-          <Text style={styles.backBtnText}>Back to Complaints</Text>
+        <Text style={styles.emptyText}>No query selected.</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => setCurrentScreen('USER_MAIN')}>
+          <Text style={styles.backBtnText}>Back to Support</Text>
         </TouchableOpacity>
       </View>
     );
@@ -36,9 +35,9 @@ export const ComplaintDetailScreen: React.FC = () => {
   };
 
   const quickReplies = [
-    'Yes, 11:00 AM slot works for me.',
-    'Please bring replacement board.',
-    'Confirming gate code and address.',
+    'Model: SolarMax Pro 5.5kVA',
+    'Serial No: INV-2025-8942',
+    'I will call the technician directly.',
   ];
 
   return (
@@ -47,164 +46,122 @@ export const ComplaintDetailScreen: React.FC = () => {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Top Ticket Header */}
+        {/* Ticket Header Card */}
         <View style={styles.ticketCard}>
           <View style={styles.topRow}>
             <View>
               <Text style={styles.ticketId}>{activeComplaint.id}</Text>
               <Text style={styles.ticketDate}>Raised: {activeComplaint.createdAt}</Text>
             </View>
-            <View style={styles.badgeRow}>
-              <PriorityBadge priority={activeComplaint.priority} />
-            </View>
+            <PriorityBadge priority={activeComplaint.priority} />
           </View>
 
           <Text style={styles.ticketTitle}>{activeComplaint.title}</Text>
           <Text style={styles.categorySub}>Category: {activeComplaint.categoryName}</Text>
 
+          {activeComplaint.customProblemDetails && (
+            <View style={styles.customProblemBox}>
+              <Text style={styles.customProblemLabel}>Clarified Problem:</Text>
+              <Text style={styles.customProblemText}>{activeComplaint.customProblemDetails}</Text>
+            </View>
+          )}
+
           <View style={styles.divider} />
 
           <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Current Status:</Text>
+            <Text style={styles.statusLabel}>Status:</Text>
             <StatusBadge status={activeComplaint.status} />
           </View>
         </View>
 
-        {/* Replacement & Repair Visual Progress Tracker */}
-        <StepTracker
-          status={activeComplaint.status}
-          replacement={activeComplaint.replacement}
-          repair={activeComplaint.repair}
-        />
-
-        {/* Hardware Replacement Status Card */}
-        {activeComplaint.replacement.required && (
-          <View style={styles.hardwareCard}>
-            <View style={styles.hardwareHeader}>
-              <Ionicons name="hardware-chip" size={18} color="#0284C7" />
-              <Text style={styles.hardwareTitle}>Hardware Replacement Status</Text>
-              <View
-                style={[
-                  styles.partStatusPill,
-                  activeComplaint.replacement.status === 'INSTALLED' && { backgroundColor: '#DCFCE7' },
-                  activeComplaint.replacement.status === 'APPROVED' && { backgroundColor: '#E0F2FE' },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.partStatusText,
-                    activeComplaint.replacement.status === 'INSTALLED' && { color: '#16A34A' },
-                    activeComplaint.replacement.status === 'APPROVED' && { color: '#0284C7' },
-                  ]}
-                >
-                  {activeComplaint.replacement.status.replace(/_/g, ' ')}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.partDetailRow}>
-              <Text style={styles.partLabel}>Required Part:</Text>
-              <Text style={styles.partValue}>{activeComplaint.replacement.partName}</Text>
-            </View>
-            <View style={styles.partDetailRow}>
-              <Text style={styles.partLabel}>Part Code:</Text>
-              <Text style={styles.partValue}>{activeComplaint.replacement.partNumber}</Text>
-            </View>
-            <View style={styles.partDetailRow}>
-              <Text style={styles.partLabel}>Warranty Coverage:</Text>
-              <Text style={[styles.partValue, { color: '#16A34A', fontWeight: '800' }]}>
-                {activeComplaint.replacement.costEstimate || '100% Free under Warranty'}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Technician / Field Engineer Card */}
-        {activeComplaint.repair.technicianName && (
-          <View style={styles.technicianCard}>
-            <View style={styles.techRow}>
-              <View style={styles.techAvatar}>
-                <Ionicons name="construct" size={18} color="#D97706" />
+        {/* Assigned Technician Contact Card (Shared by Admin) */}
+        {activeComplaint.sharedTechnician && (
+          <View style={styles.techCard}>
+            <View style={styles.techTopRow}>
+              <View style={styles.techIconCircle}>
+                <Ionicons name="call" size={20} color="#FFFFFF" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.techRoleTitle}>ASSIGNED FIELD ENGINEER</Text>
-                <Text style={styles.techName}>{activeComplaint.repair.technicianName}</Text>
-                <Text style={styles.techPhone}>{activeComplaint.repair.technicianPhone}</Text>
-              </View>
-              <View style={styles.scheduledPill}>
-                <Ionicons name="calendar-outline" size={12} color="#475569" />
-                <Text style={styles.scheduledText}>{activeComplaint.repair.scheduledDate}</Text>
+                <Text style={styles.techCardBadge}>ASSIGNED TECHNICIAN CONTACT</Text>
+                <Text style={styles.techName}>{activeComplaint.sharedTechnician.name}</Text>
+                <Text style={styles.techPhone}>{activeComplaint.sharedTechnician.phone}</Text>
+                {activeComplaint.sharedTechnician.designation && (
+                  <Text style={styles.techDesig}>{activeComplaint.sharedTechnician.designation}</Text>
+                )}
               </View>
             </View>
 
-            {activeComplaint.repair.actionTaken ? (
-              <View style={styles.techActionBox}>
-                <Text style={styles.techActionLabel}>Technician Action Log:</Text>
-                <Text style={styles.techActionText}>{activeComplaint.repair.actionTaken}</Text>
-              </View>
-            ) : null}
+            <TouchableOpacity
+              style={styles.callBtn}
+              onPress={() => alert(`Dialing technician ${activeComplaint.sharedTechnician?.name} at ${activeComplaint.sharedTechnician?.phone}`)}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="call-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.callBtnText}>Call Technician Directly</Text>
+            </TouchableOpacity>
           </View>
         )}
 
-        {/* Admin <-> User Reply Conversation Thread */}
+        {/* Direct Admin <-> User Chat Thread */}
         <View style={styles.threadCard}>
           <View style={styles.threadHeader}>
             <Ionicons name="chatbubbles-outline" size={18} color="#0EA5E9" />
-            <Text style={styles.threadHeaderTitle}>Official Support & Admin Thread</Text>
+            <Text style={styles.threadHeaderTitle}>Direct Chat with Admin Support</Text>
           </View>
           <Text style={styles.threadHeaderSub}>
-            Live conversation between Customer, Admin Triage, and Field Technicians
+            Provide product serial numbers, photos, or updates to the Admin here.
           </Text>
 
           <View style={styles.messagesList}>
             {activeComplaint.messages.map((msg) => {
               const isUser = msg.senderRole === 'END_USER';
-              const isAdmin = msg.senderRole === 'ADMIN';
-              const isEmp = msg.senderRole === 'EMPLOYEE';
 
               return (
                 <View
                   key={msg.id}
                   style={[
                     styles.messageBubble,
-                    isUser && styles.messageBubbleUser,
-                    isAdmin && styles.messageBubbleAdmin,
-                    isEmp && styles.messageBubbleEmp,
+                    isUser ? styles.messageBubbleUser : styles.messageBubbleAdmin,
                   ]}
                 >
                   <View style={styles.senderHeader}>
                     <View style={styles.senderLeft}>
                       <Ionicons
-                        name={
-                          isUser ? 'person-circle' : isAdmin ? 'shield-checkmark' : 'construct'
-                        }
+                        name={isUser ? 'person-circle' : 'shield-checkmark'}
                         size={14}
-                        color={isUser ? '#0284C7' : isAdmin ? '#7C3AED' : '#D97706'}
+                        color={isUser ? '#0284C7' : '#7C3AED'}
                       />
                       <Text
                         style={[
                           styles.senderRoleTag,
-                          isUser && { color: '#0284C7' },
-                          isAdmin && { color: '#7C3AED' },
-                          isEmp && { color: '#D97706' },
+                          { color: isUser ? '#0284C7' : '#7C3AED' },
                         ]}
                       >
-                        {isAdmin ? 'ADMIN REPLY' : isEmp ? 'TECHNICIAN UPDATE' : 'CUSTOMER'}
+                        {isUser ? 'YOU' : 'ADMIN SUPPORT'}
                       </Text>
                     </View>
                     <Text style={styles.timestamp}>{msg.timestamp}</Text>
                   </View>
 
-                  <Text style={styles.senderName}>{msg.senderName}</Text>
                   <Text style={styles.messageText}>{msg.text}</Text>
+
+                  {/* If message shared technician contact */}
+                  {msg.technicianShared && (
+                    <View style={styles.msgTechBox}>
+                      <Ionicons name="call" size={14} color="#7C3AED" />
+                      <Text style={styles.msgTechText}>
+                        Technician Contact: {msg.technicianShared.name} ({msg.technicianShared.phone})
+                      </Text>
+                    </View>
+                  )}
                 </View>
               );
             })}
           </View>
 
-          {/* Quick Reply Suggestion Chips */}
+          {/* Quick Product Detail Suggestion Chips */}
           <View style={styles.quickReplyContainer}>
-            <Text style={styles.quickReplyTitle}>Quick Responses:</Text>
+            <Text style={styles.quickReplyTitle}>Quick Responses & Product Details:</Text>
             <View style={styles.quickChipsRow}>
               {quickReplies.map((qr, idx) => (
                 <TouchableOpacity
@@ -222,7 +179,7 @@ export const ComplaintDetailScreen: React.FC = () => {
           <View style={styles.replyBar}>
             <TextInput
               style={styles.replyInput}
-              placeholder="Respond to Admin / Technician..."
+              placeholder="Respond to Admin or share product details..."
               placeholderTextColor="#94A3B8"
               value={replyText}
               onChangeText={setReplyText}
@@ -291,15 +248,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: 0.5,
   },
   ticketDate: {
     fontSize: 11,
     color: '#94A3B8',
     marginTop: 2,
-  },
-  badgeRow: {
-    alignItems: 'flex-end',
   },
   ticketTitle: {
     fontSize: 16,
@@ -311,6 +264,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
     marginTop: 4,
+  },
+  customProblemBox: {
+    backgroundColor: '#FAF5FF',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E9D5FF',
+    marginTop: 8,
+  },
+  customProblemLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#7C3AED',
+  },
+  customProblemText: {
+    fontSize: 12,
+    color: '#4C1D95',
+    marginTop: 2,
   },
   divider: {
     height: 1,
@@ -327,123 +298,62 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#475569',
   },
-  hardwareCard: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
+  techCard: {
+    backgroundColor: '#1E1B4B',
+    borderRadius: 14,
+    padding: 16,
     marginBottom: 12,
   },
-  hardwareHeader: {
+  techTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
+    gap: 12,
   },
-  hardwareTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0369A1',
-    flex: 1,
-  },
-  partStatusPill: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  partStatusText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#B45309',
-    letterSpacing: 0.3,
-  },
-  partDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  partLabel: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  partValue: {
-    fontSize: 11,
-    color: '#0F172A',
-    fontWeight: '700',
-    flex: 1,
-    textAlign: 'right',
-  },
-  technicianCard: {
-    backgroundColor: '#FFFBEB',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    marginBottom: 12,
-  },
-  techRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  techAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FEF3C7',
+  techIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#7C3AED',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  techRoleTitle: {
+  techCardBadge: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#D97706',
-    letterSpacing: 0.5,
+    color: '#C4B5FD',
+    letterSpacing: 0.8,
   },
   techName: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginTop: 2,
   },
   techPhone: {
-    fontSize: 11,
-    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#A7F3D0',
+    marginTop: 1,
   },
-  scheduledPill: {
+  techDesig: {
+    fontSize: 11,
+    color: '#DDD6FE',
+    marginTop: 2,
+  },
+  callBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    justifyContent: 'center',
+    backgroundColor: '#059669',
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 12,
+    gap: 6,
   },
-  scheduledText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  techActionBox: {
-    marginTop: 10,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#FDE68A',
-  },
-  techActionLabel: {
-    fontSize: 10,
+  callBtnText: {
+    fontSize: 13,
     fontWeight: '800',
-    color: '#B45309',
-  },
-  techActionText: {
-    fontSize: 11,
-    color: '#475569',
-    marginTop: 2,
-    lineHeight: 16,
+    color: '#FFFFFF',
   },
   threadCard: {
     backgroundColor: '#FFFFFF',
@@ -485,10 +395,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAF5FF',
     borderColor: '#E9D5FF',
   },
-  messageBubbleEmp: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FDE68A',
-  },
   senderHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -509,16 +415,24 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#94A3B8',
   },
-  senderName: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: 4,
-  },
   messageText: {
     fontSize: 13,
     color: '#0F172A',
     lineHeight: 18,
+  },
+  msgTechBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EDE9FE',
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  msgTechText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6B21A8',
   },
   quickReplyContainer: {
     marginTop: 14,

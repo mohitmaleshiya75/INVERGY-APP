@@ -3,53 +3,38 @@ import { StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { Header } from './src/components/Header';
-import { AuthScreen } from './src/screens/auth/AuthScreen';
 import { UserHomeScreen } from './src/screens/user/UserHomeScreen';
+import { ProfileScreen } from './src/screens/user/ProfileScreen';
 import { CategorySelectScreen } from './src/screens/user/CategorySelectScreen';
 import { RaiseComplaintScreen } from './src/screens/user/RaiseComplaintScreen';
 import { ComplaintDetailScreen } from './src/screens/user/ComplaintDetailScreen';
 import { AdminDashboardScreen } from './src/screens/admin/AdminDashboardScreen';
-import { EmployeeDashboardScreen } from './src/screens/employee/EmployeeDashboardScreen';
 
 const MainNavigator: React.FC = () => {
-  const { currentScreen, setCurrentScreen, role } = useApp();
+  const { currentScreen, setCurrentScreen, role, userTab } = useApp();
 
   const getHeaderProps = () => {
     switch (currentScreen) {
-      case 'AUTH':
-        return {
-          title: 'User Registration & Roles',
-          showBack: true,
-          onBack: () => {
-            if (role === 'END_USER') setCurrentScreen('USER_HOME');
-            else if (role === 'ADMIN') setCurrentScreen('ADMIN_HOME');
-            else setCurrentScreen('EMPLOYEE_HOME');
-          },
-        };
       case 'CATEGORY_SELECT':
         return {
           title: 'Select Problem Category',
           showBack: true,
-          onBack: () => setCurrentScreen('USER_HOME'),
+          onBack: () => setCurrentScreen('USER_MAIN'),
         };
       case 'RAISE_COMPLAINT':
         return {
-          title: 'Raise Support Complaint',
+          title: 'Raise Support Query',
           showBack: true,
           onBack: () => setCurrentScreen('CATEGORY_SELECT'),
         };
       case 'COMPLAINT_DETAIL':
         return {
-          title: 'Complaint & Repair Progress',
+          title: 'Query & Admin Chat',
           showBack: true,
-          onBack: () => setCurrentScreen('USER_HOME'),
+          onBack: () => setCurrentScreen('USER_MAIN'),
         };
-      case 'USER_HOME':
-        return { title: undefined, showBack: false };
+      case 'USER_MAIN':
       case 'ADMIN_HOME':
-        return { title: undefined, showBack: false };
-      case 'EMPLOYEE_HOME':
-        return { title: undefined, showBack: false };
       default:
         return { title: undefined, showBack: false };
     }
@@ -58,21 +43,12 @@ const MainNavigator: React.FC = () => {
   const headerProps = getHeaderProps();
 
   const renderScreen = () => {
-    // If user clicked Profile/Register button
-    if (currentScreen === 'AUTH') {
-      return <AuthScreen />;
-    }
-
-    // Role-specific screens
+    // Role: ADMIN
     if (role === 'ADMIN') {
       return <AdminDashboardScreen />;
     }
 
-    if (role === 'EMPLOYEE') {
-      return <EmployeeDashboardScreen />;
-    }
-
-    // Default: END_USER screens
+    // Role: END_USER
     switch (currentScreen) {
       case 'CATEGORY_SELECT':
         return <CategorySelectScreen />;
@@ -80,8 +56,12 @@ const MainNavigator: React.FC = () => {
         return <RaiseComplaintScreen />;
       case 'COMPLAINT_DETAIL':
         return <ComplaintDetailScreen />;
-      case 'USER_HOME':
+      case 'USER_MAIN':
       default:
+        // Render according to the selected user tab
+        if (userTab === 'PROFILE') {
+          return <ProfileScreen />;
+        }
         return <UserHomeScreen />;
     }
   };

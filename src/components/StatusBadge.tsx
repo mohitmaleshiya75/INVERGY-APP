@@ -9,22 +9,14 @@ interface StatusBadgeProps {
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const getStatusConfig = () => {
     switch (status) {
-      case 'REGISTERED':
-        return { label: 'Ticket Raised', bg: '#FEF3C7', text: '#D97706', border: '#FDE68A' };
+      case 'PENDING_ADMIN_REPLY':
+        return { label: 'Waiting for Admin', bg: '#FEF3C7', text: '#D97706', border: '#FDE68A' };
       case 'ADMIN_REPLIED':
         return { label: 'Admin Replied', bg: '#E0F2FE', text: '#0284C7', border: '#BAE6FD' };
-      case 'ASSIGNED_EMPLOYEE':
-        return { label: 'Technician Assigned', bg: '#EDE9FE', text: '#7C3AED', border: '#DDD6FE' };
-      case 'REPAIR_SCHEDULED':
-        return { label: 'Visit Scheduled', bg: '#FEE2E2', text: '#DC2626', border: '#FECACA' };
-      case 'REPLACEMENT_ORDERED':
-        return { label: 'Part Dispatched', bg: '#FEF9C3', text: '#CA8A04', border: '#FEF08A' };
-      case 'REPAIR_IN_PROGRESS':
-        return { label: 'Repair in Progress', bg: '#FFEDD5', text: '#EA580C', border: '#FED7AA' };
-      case 'REPAIR_REPLACEMENT_DONE':
-        return { label: 'Repaired & Replaced', bg: '#DCFCE7', text: '#16A34A', border: '#BBF7D0' };
+      case 'REPAIR_REPLACEMENT_IN_PROGRESS':
+        return { label: 'Technician Contact Shared', bg: '#EDE9FE', text: '#7C3AED', border: '#DDD6FE' };
       case 'RESOLVED':
-        return { label: 'Resolved & Closed', bg: '#D1FAE5', text: '#059669', border: '#A7F3D0' };
+        return { label: 'Resolved & Closed', bg: '#DCFCE7', text: '#16A34A', border: '#BBF7D0' };
       default:
         return { label: status, bg: '#F1F5F9', text: '#475569', border: '#E2E8F0' };
     }
@@ -66,8 +58,8 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: 20,
     borderWidth: 1,
     alignSelf: 'flex-start',
@@ -76,21 +68,21 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    marginRight: 6,
+    marginRight: 5,
   },
   badgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
   priorityBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
     alignSelf: 'flex-start',
   },
   priorityText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
   },

@@ -17,37 +17,27 @@ export const UserHomeScreen: React.FC = () => {
     setCurrentScreen('COMPLAINT_DETAIL');
   };
 
-  const activeTickets = complaints.filter(
-    (c) => c.status !== 'REPAIR_REPLACEMENT_DONE' && c.status !== 'RESOLVED'
-  );
-  const completedTickets = complaints.filter(
-    (c) => c.status === 'REPAIR_REPLACEMENT_DONE' || c.status === 'RESOLVED'
-  );
+  const activeTickets = complaints.filter((c) => c.status !== 'RESOLVED');
+  const resolvedTickets = complaints.filter((c) => c.status === 'RESOLVED');
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Welcome Customer Card */}
-        <View style={styles.userCard}>
-          <View style={styles.userTop}>
+        {/* Help & Support Banner */}
+        <View style={styles.supportHeroCard}>
+          <View style={styles.heroTop}>
             <View>
-              <Text style={styles.greeting}>Welcome Back,</Text>
-              <Text style={styles.userName}>{user.name}</Text>
+              <Text style={styles.heroGreeting}>Hello, {user.name.split(' ')[0]}</Text>
+              <Text style={styles.heroTitle}>Help & Support Center</Text>
             </View>
-            <View style={styles.warrantyPill}>
-              <Ionicons name="shield-checkmark" size={14} color="#10B981" />
-              <Text style={styles.warrantyText}>WARRANTY ACTIVE</Text>
-            </View>
-          </View>
-
-          <View style={styles.equipmentBox}>
-            <Ionicons name="hardware-chip-outline" size={20} color="#0EA5E9" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.equipmentLabel}>REGISTERED SYSTEM</Text>
-              <Text style={styles.equipmentName}>{user.inverterModel}</Text>
-              <Text style={styles.serialText}>S/N: {user.serialNumber}</Text>
+            <View style={styles.activePill}>
+              <Ionicons name="flash" size={12} color="#0284C7" />
+              <Text style={styles.activePillText}>24/7 ASSISTANCE</Text>
             </View>
           </View>
+          <Text style={styles.heroSub}>
+            Direct support with Admin. Select a problem category or choose "Other Problem" to explain your issue.
+          </Text>
         </View>
 
         {/* Primary Action Button: Raise Complaint */}
@@ -62,7 +52,7 @@ export const UserHomeScreen: React.FC = () => {
           <View style={{ flex: 1 }}>
             <Text style={styles.raiseTitle}>Raise a New Complaint</Text>
             <Text style={styles.raiseSub}>
-              Select category ➔ report fault ➔ get admin reply & on-site repair/replacement
+              Select category ➔ report issue ➔ get direct Admin reply & technician contact
             </Text>
           </View>
           <Ionicons name="arrow-forward-circle" size={26} color="#FFFFFF" />
@@ -81,30 +71,49 @@ export const UserHomeScreen: React.FC = () => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryScroll}
         >
-          {PROBLEM_CATEGORIES.slice(0, 4).map((cat) => (
-            <TouchableOpacity
-              key={cat.id}
-              style={styles.catMiniCard}
-              onPress={() => {
-                setSelectedCategory(cat);
-                setCurrentScreen('RAISE_COMPLAINT');
-              }}
-            >
-              <View style={styles.catMiniIcon}>
-                <Ionicons name={cat.icon as any} size={20} color="#0EA5E9" />
-              </View>
-              <Text style={styles.catMiniTitle} numberOfLines={2}>
-                {cat.title}
-              </Text>
-              <Text style={styles.catMiniBadge}>{cat.badge}</Text>
-            </TouchableOpacity>
-          ))}
+          {PROBLEM_CATEGORIES.map((cat) => {
+            const isOther = !!cat.isOther;
+            return (
+              <TouchableOpacity
+                key={cat.id}
+                style={[styles.catMiniCard, isOther && styles.catMiniCardOther]}
+                onPress={() => {
+                  setSelectedCategory(cat);
+                  setCurrentScreen('RAISE_COMPLAINT');
+                }}
+              >
+                <View
+                  style={[
+                    styles.catMiniIcon,
+                    isOther && { backgroundColor: '#EDE9FE' },
+                  ]}
+                >
+                  <Ionicons
+                    name={cat.icon as any}
+                    size={20}
+                    color={isOther ? '#8B5CF6' : '#0EA5E9'}
+                  />
+                </View>
+                <Text style={styles.catMiniTitle} numberOfLines={2}>
+                  {cat.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.catMiniBadge,
+                    isOther && { color: '#8B5CF6' },
+                  ]}
+                >
+                  {cat.badge}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
-        {/* Active Complaints List */}
+        {/* Active Support Tickets */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>
-            Active Complaints ({activeTickets.length})
+            My Support Queries ({activeTickets.length})
           </Text>
         </View>
 
@@ -112,53 +121,70 @@ export const UserHomeScreen: React.FC = () => {
           <View style={styles.emptyCard}>
             <Ionicons name="checkmark-circle-outline" size={32} color="#10B981" />
             <Text style={styles.emptyTitle}>No Active Complaints</Text>
-            <Text style={styles.emptySub}>Your inverter system is operating normally.</Text>
+            <Text style={styles.emptySub}>You have no pending support tickets.</Text>
           </View>
         ) : (
           <View style={styles.ticketsList}>
-            {activeTickets.map((ticket) => (
-              <TouchableOpacity
-                key={ticket.id}
-                style={styles.ticketCard}
-                onPress={() => handleOpenComplaint(ticket.id)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.ticketHeaderRow}>
-                  <Text style={styles.ticketId}>{ticket.id}</Text>
-                  <PriorityBadge priority={ticket.priority} />
-                </View>
+            {activeTickets.map((ticket) => {
+              const lastMsg = ticket.messages[ticket.messages.length - 1];
 
-                <Text style={styles.ticketTitle}>{ticket.title}</Text>
-                <Text style={styles.ticketCategory}>Category: {ticket.categoryName}</Text>
-
-                {ticket.replacement.required && (
-                  <View style={styles.replacementIndicator}>
-                    <Ionicons name="hardware-chip" size={12} color="#0284C7" />
-                    <Text style={styles.replacementIndicatorText}>
-                      Part Replacement: {ticket.replacement.partName} ({ticket.replacement.status})
-                    </Text>
+              return (
+                <TouchableOpacity
+                  key={ticket.id}
+                  style={styles.ticketCard}
+                  onPress={() => handleOpenComplaint(ticket.id)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.ticketHeaderRow}>
+                    <Text style={styles.ticketId}>{ticket.id}</Text>
+                    <PriorityBadge priority={ticket.priority} />
                   </View>
-                )}
 
-                <View style={styles.ticketFooter}>
-                  <StatusBadge status={ticket.status} />
-                  <Text style={styles.viewThreadText}>View Thread ➔</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+                  <Text style={styles.ticketTitle}>{ticket.title}</Text>
+                  <Text style={styles.ticketCategory}>Category: {ticket.categoryName}</Text>
+
+                  {/* Shared Technician Pill */}
+                  {ticket.sharedTechnician && (
+                    <View style={styles.techPill}>
+                      <Ionicons name="call" size={12} color="#7C3AED" />
+                      <Text style={styles.techPillText}>
+                        Technician: {ticket.sharedTechnician.name} ({ticket.sharedTechnician.phone})
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Last Message Snippet */}
+                  {lastMsg && (
+                    <View style={styles.lastMsgBox}>
+                      <Text style={styles.lastMsgSender}>
+                        {lastMsg.senderRole === 'ADMIN' ? 'Admin:' : 'You:'}
+                      </Text>
+                      <Text style={styles.lastMsgText} numberOfLines={1}>
+                        {lastMsg.text}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.ticketFooter}>
+                    <StatusBadge status={ticket.status} />
+                    <Text style={styles.viewThreadText}>Open Chat ➔</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
-        {/* Resolved / Completed History */}
-        {completedTickets.length > 0 && (
+        {/* Resolved Queries */}
+        {resolvedTickets.length > 0 && (
           <>
-            <View style={[styles.sectionHeaderRow, { marginTop: 20 }]}>
+            <View style={[styles.sectionHeaderRow, { marginTop: 22 }]}>
               <Text style={styles.sectionTitle}>
-                Resolved & Replaced History ({completedTickets.length})
+                Resolved Queries ({resolvedTickets.length})
               </Text>
             </View>
             <View style={styles.ticketsList}>
-              {completedTickets.map((ticket) => (
+              {resolvedTickets.map((ticket) => (
                 <TouchableOpacity
                   key={ticket.id}
                   style={[styles.ticketCard, styles.ticketCardResolved]}
@@ -170,12 +196,9 @@ export const UserHomeScreen: React.FC = () => {
                     <StatusBadge status={ticket.status} />
                   </View>
                   <Text style={styles.ticketTitle}>{ticket.title}</Text>
-                  <Text style={styles.ticketCategory}>
-                    Completed: {ticket.repair.completedAt || 'Recently'}
-                  </Text>
                   <View style={styles.ticketFooter}>
-                    <Text style={styles.resolvedNote}>✓ Replacement & Repair Signed Off</Text>
-                    <Text style={styles.viewThreadText}>Review ➔</Text>
+                    <Text style={styles.resolvedNote}>✓ Query Closed</Text>
+                    <Text style={styles.viewThreadText}>Review Chat ➔</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -196,68 +219,48 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
-  userCard: {
+  supportHeroCard: {
     backgroundColor: '#0F172A',
     borderRadius: 14,
     padding: 16,
     marginBottom: 14,
   },
-  userTop: {
+  heroTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  greeting: {
+  heroGreeting: {
     fontSize: 12,
     color: '#94A3B8',
     fontWeight: '500',
   },
-  userName: {
+  heroTitle: {
     fontSize: 18,
     fontWeight: '800',
     color: '#FFFFFF',
     marginTop: 2,
   },
-  warrantyPill: {
+  activePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#064E3B',
+    backgroundColor: '#E0F2FE',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     gap: 4,
   },
-  warrantyText: {
+  activePillText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#34D399',
+    color: '#0284C7',
     letterSpacing: 0.5,
   },
-  equipmentBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E293B',
-    borderRadius: 10,
-    padding: 12,
-    gap: 10,
-  },
-  equipmentLabel: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#38BDF8',
-    letterSpacing: 0.5,
-  },
-  equipmentName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#F8FAFC',
-    marginTop: 2,
-  },
-  serialText: {
-    fontSize: 11,
+  heroSub: {
+    fontSize: 12,
     color: '#94A3B8',
-    marginTop: 1,
+    lineHeight: 16,
   },
   raiseActionCard: {
     flexDirection: 'row',
@@ -321,6 +324,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
+  catMiniCardOther: {
+    borderColor: '#C4B5FD',
+    backgroundColor: '#FAF5FF',
+  },
   catMiniIcon: {
     width: 36,
     height: 36,
@@ -351,11 +358,6 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   ticketCardResolved: {
     backgroundColor: '#F8FAFC',
@@ -382,20 +384,40 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
   },
-  replacementIndicator: {
+  techPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#FAF5FF',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    marginTop: 8,
+    marginTop: 6,
+    alignSelf: 'flex-start',
   },
-  replacementIndicatorText: {
+  techPillText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#0369A1',
+    color: '#7C3AED',
+  },
+  lastMsgBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 6,
+    padding: 6,
+    marginTop: 8,
+    gap: 4,
+  },
+  lastMsgSender: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  lastMsgText: {
+    fontSize: 11,
+    color: '#64748B',
+    flex: 1,
   },
   ticketFooter: {
     flexDirection: 'row',

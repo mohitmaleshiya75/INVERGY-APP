@@ -11,13 +11,14 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ title, showBack, onBack }) => {
-  const { role, switchRoleAndNavigate, currentScreen, setCurrentScreen, user } = useApp();
+  const { role, switchRole, userTab, setUserTab, currentScreen, setCurrentScreen } = useApp();
 
   const roles: { key: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
     { key: 'END_USER', label: 'End User', icon: 'person', color: '#0EA5E9' },
-    { key: 'EMPLOYEE', label: 'Employee', icon: 'construct', color: '#F59E0B' },
     { key: 'ADMIN', label: 'Admin', icon: 'shield-checkmark', color: '#8B5CF6' },
   ];
+
+  const isUserMain = role === 'END_USER' && currentScreen === 'USER_MAIN';
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -30,25 +31,11 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack, onBack }) => {
             </View>
             <View>
               <Text style={styles.brandTitle}>INVERGY</Text>
-              <Text style={styles.brandSub}>Energy & Inverter Care</Text>
+              <Text style={styles.brandSub}>Energy & Equipment Support</Text>
             </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.profileChip}
-            onPress={() => setCurrentScreen('AUTH')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="person-circle-outline" size={18} color="#0F172A" />
-            <Text style={styles.profileText} numberOfLines={1}>
-              {currentScreen === 'AUTH' ? 'Close Auth' : user.name.split(' ')[0]}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Interactive Role Switcher Bar */}
-        <View style={styles.roleSwitcherContainer}>
-          <Text style={styles.roleSwitcherLabel}>TEST VIEW ROLE:</Text>
+          {/* Quick Role Switcher (End User / Admin) */}
           <View style={styles.roleTabs}>
             {roles.map((r) => {
               const isActive = role === r.key;
@@ -59,12 +46,12 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack, onBack }) => {
                     styles.roleTab,
                     isActive && { backgroundColor: r.color, borderColor: r.color },
                   ]}
-                  onPress={() => switchRoleAndNavigate(r.key)}
-                  activeOpacity={0.7}
+                  onPress={() => switchRole(r.key)}
+                  activeOpacity={0.8}
                 >
                   <Ionicons
                     name={r.icon}
-                    size={14}
+                    size={13}
                     color={isActive ? '#FFFFFF' : '#64748B'}
                     style={{ marginRight: 4 }}
                   />
@@ -82,7 +69,52 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack, onBack }) => {
           </View>
         </View>
 
-        {/* Optional Page Subheader / Back Bar */}
+        {/* User Tabs: "Help & Support" and "Profile" (Only shown for End User on main view) */}
+        {role === 'END_USER' && isUserMain && (
+          <View style={styles.userTabBar}>
+            <TouchableOpacity
+              style={[styles.userTabBtn, userTab === 'HELP_SUPPORT' && styles.userTabBtnActive]}
+              onPress={() => setUserTab('HELP_SUPPORT')}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={userTab === 'HELP_SUPPORT' ? 'help-buoy' : 'help-buoy-outline'}
+                size={16}
+                color={userTab === 'HELP_SUPPORT' ? '#0EA5E9' : '#64748B'}
+              />
+              <Text
+                style={[
+                  styles.userTabBtnText,
+                  userTab === 'HELP_SUPPORT' && styles.userTabBtnTextActive,
+                ]}
+              >
+                Help & Support
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.userTabBtn, userTab === 'PROFILE' && styles.userTabBtnActive]}
+              onPress={() => setUserTab('PROFILE')}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={userTab === 'PROFILE' ? 'person' : 'person-outline'}
+                size={16}
+                color={userTab === 'PROFILE' ? '#0EA5E9' : '#64748B'}
+              />
+              <Text
+                style={[
+                  styles.userTabBtnText,
+                  userTab === 'PROFILE' && styles.userTabBtnTextActive,
+                ]}
+              >
+                Profile
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Sub-page Navigation Header */}
         {title && (
           <View style={styles.titleRow}>
             {showBack && (
@@ -108,14 +140,14 @@ const styles = StyleSheet.create({
   topContainer: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 10,
+    paddingBottom: 8,
     backgroundColor: '#FFFFFF',
   },
   brandRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   brandLeft: {
     flexDirection: 'row',
@@ -137,55 +169,23 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   brandSub: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#64748B',
     fontWeight: '500',
-  },
-  profileChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 4,
-  },
-  profileText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#0F172A',
-  },
-  roleSwitcherContainer: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    padding: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  roleSwitcherLabel: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 0.8,
-    marginBottom: 4,
-    paddingHorizontal: 4,
   },
   roleTabs: {
     flexDirection: 'row',
     gap: 6,
+    backgroundColor: '#F1F5F9',
+    padding: 3,
+    borderRadius: 8,
   },
   roleTab: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
   },
   roleTabText: {
     fontSize: 11,
@@ -195,12 +195,47 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   roleTabTextInactive: {
-    color: '#475569',
+    color: '#64748B',
+  },
+  userTabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 4,
+  },
+  userTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 7,
+    gap: 6,
+  },
+  userTabBtnActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  userTabBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  userTabBtnTextActive: {
+    color: '#0EA5E9',
+    fontWeight: '800',
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
   },
   backButton: {
     marginRight: 10,
@@ -209,8 +244,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   pageTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#0F172A',
   },
 });

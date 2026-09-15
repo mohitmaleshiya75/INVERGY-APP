@@ -5,31 +5,29 @@ import {
   ComplaintMessage,
   ComplaintStatus,
   PriorityLevel,
+  TechnicianContact,
   UserProfile,
   UserRole,
 } from '../types';
-import {
-  AVAILABLE_EMPLOYEES,
-  INITIAL_COMPLAINTS,
-  INITIAL_USER,
-} from '../data/mockData';
+import { INITIAL_COMPLAINTS, INITIAL_USER } from '../data/mockData';
+
+export type UserTab = 'HELP_SUPPORT' | 'PROFILE';
 
 export type ScreenView =
-  | 'AUTH'
-  | 'USER_HOME'
+  | 'USER_MAIN'          // Contains User tabs (Help & Support / Profile)
   | 'CATEGORY_SELECT'
   | 'RAISE_COMPLAINT'
   | 'COMPLAINT_DETAIL'
   | 'ADMIN_HOME'
-  | 'ADMIN_DETAIL'
-  | 'EMPLOYEE_HOME'
-  | 'EMPLOYEE_DETAIL';
+  | 'AUTH';
 
 interface AppContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
   user: UserProfile;
   setUser: (user: UserProfile) => void;
+  userTab: UserTab;
+  setUserTab: (tab: UserTab) => void;
   currentScreen: ScreenView;
   setCurrentScreen: (screen: ScreenView) => void;
   complaints: Complaint[];
@@ -40,32 +38,21 @@ interface AppContextType {
   activeComplaint: Complaint | undefined;
 
   // Actions
-  registerAndLogin: (profile: UserProfile) => void;
+  updateUserProfile: (profile: Partial<UserProfile>) => void;
   createComplaint: (data: {
     title: string;
     description: string;
     priority: PriorityLevel;
-    deviceModel: string;
-    serialNumber: string;
+    customProblemDetails?: string;
   }) => string;
   sendUserReply: (complaintId: string, text: string) => void;
   sendAdminReply: (
     complaintId: string,
     replyText: string,
-    assignEmployeeId?: string,
-    approveReplacement?: boolean,
-    replacementPartName?: string
+    technicianShared?: TechnicianContact,
+    newStatus?: ComplaintStatus
   ) => void;
-  submitEmployeeResolution: (
-    complaintId: string,
-    data: {
-      diagnosticNotes: string;
-      actionTaken: string;
-      replacementDone: boolean;
-      markCompleted: boolean;
-    }
-  ) => void;
-  switchRoleAndNavigate: (newRole: UserRole) => void;
+  switchRole: (newRole: UserRole) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -73,53 +60,45 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [role, setRole] = useState<UserRole>('END_USER');
   const [user, setUser] = useState<UserProfile>(INITIAL_USER);
-  const [currentScreen, setCurrentScreen] = useState<ScreenView>('USER_HOME');
+  const [userTab, setUserTab] = useState<UserTab>('HELP_SUPPORT');
+  const [currentScreen, setCurrentScreen] = useState<ScreenView>('USER_MAIN');
   const [complaints, setComplaints] = useState<Complaint[]>(INITIAL_COMPLAINTS);
   const [selectedCategory, setSelectedCategory] = useState<ComplaintCategory | null>(null);
   const [activeComplaintId, setActiveComplaintId] = useState<string | null>(INITIAL_COMPLAINTS[0]?.id ?? null);
 
   const activeComplaint = complaints.find((c) => c.id === activeComplaintId);
 
-  const switchRoleAndNavigate = (newRole: UserRole) => {
+  const switchRole = (newRole: UserRole) => {
     setRole(newRole);
     if (newRole === 'END_USER') {
-      setCurrentScreen('USER_HOME');
-    } else if (newRole === 'ADMIN') {
+      setCurrentScreen('USER_MAIN');
+    } else {
       setCurrentScreen('ADMIN_HOME');
-    } else if (newRole === 'EMPLOYEE') {
-      setCurrentScreen('EMPLOYEE_HOME');
     }
   };
 
-  const registerAndLogin = (profile: UserProfile) => {
-    setUser(profile);
-    setRole(profile.role);
-    if (profile.role === 'END_USER') setCurrentScreen('USER_HOME');
-    else if (profile.role === 'ADMIN') setCurrentScreen('ADMIN_HOME');
-    else setCurrentScreen('EMPLOYEE_HOME');
+  const updateUserProfile = (updated: Partial<UserProfile>) => {
+    setUser((prev) => ({ ...prev, ...updated }));
   };
 
   const createComplaint = (data: {
     title: string;
     description: string;
     priority: PriorityLevel;
-    deviceModel: string;
-    serialNumber: string;
+    customProblemDetails?: string;
   }): string => {
     const newId = `INV-${Math.floor(10000 + Math.random() * 90000)}`;
-    const now = new Date();
     const timeString = 'Just now';
 
     const newComplaint: Complaint = {
       id: newId,
       title: data.title,
-      categoryId: selectedCategory ? selectedCategory.id : 'cat-general',
-      categoryName: selectedCategory ? selectedCategory.title : 'General Equipment Service',
-      deviceModel: data.deviceModel || user.inverterModel,
-      serialNumber: data.serialNumber || user.serialNumber,
+      categoryId: selectedCategory ? selectedCategory.id : 'cat-other-problem',
+      categoryName: selectedCategory ? selectedCategory.title : 'Other Problem / Not Listed',
+      customProblemDetails: data.customProblemDetails,
       description: data.description,
       priority: data.priority,
-      status: 'REGISTERED',
+      status: 'PENDING_ADMIN_REPLY',
       createdAt: timeString,
       customerName: user.name,
       customerPhone: user.phone,
@@ -129,23 +108,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: `msg-${Date.now()}`,
           senderRole: 'END_USER',
           senderName: user.name,
-          text: data.description,
+          text: data.customProblemDetails
+            ? `Problem Details: ${data.customProblemDetails}\n\nNotes: ${data.description}`
+            : data.description,
           timestamp: timeString,
         },
       ],
-      replacement: {
-        required: selectedCategory?.id === 'cat-part-replacement',
-        partName: selectedCategory?.id === 'cat-part-replacement' ? 'Module / Board Replacement' : 'Inspection Pending',
-        partNumber: 'TBD-BY-TECHNICIAN',
-        status: selectedCategory?.id === 'cat-part-replacement' ? 'PENDING_ADMIN_APPROVAL' : 'NOT_REQUIRED',
-        isUnderWarranty: true,
-        costEstimate: 'Under Warranty Verification',
-      },
-      repair: {
-        diagnosticNotes: 'Awaiting initial diagnostic assignment.',
-        actionTaken: '',
-        replacementDone: false,
-      },
     };
 
     setComplaints((prev) => [newComplaint, ...prev]);
@@ -170,6 +138,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (c.id !== complaintId) return c;
         return {
           ...c,
+          status: c.status === 'RESOLVED' ? 'PENDING_ADMIN_REPLY' : c.status,
           messages: [...c.messages, newMsg],
         };
       })
@@ -179,110 +148,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const sendAdminReply = (
     complaintId: string,
     replyText: string,
-    assignEmployeeId?: string,
-    approveReplacement?: boolean,
-    replacementPartName?: string
+    technicianShared?: TechnicianContact,
+    newStatus?: ComplaintStatus
   ) => {
-    if (!replyText.trim()) return;
+    if (!replyText.trim() && !technicianShared) return;
     const timeString = 'Just now';
+
     const newMsg: ComplaintMessage = {
       id: `msg-${Date.now()}`,
       senderRole: 'ADMIN',
-      senderName: 'Admin Operations',
+      senderName: 'INVERGY Admin Support',
       text: replyText.trim(),
       timestamp: timeString,
-    };
-
-    const employee = AVAILABLE_EMPLOYEES.find((e) => e.id === assignEmployeeId);
-
-    setComplaints((prev) =>
-      prev.map((c) => {
-        if (c.id !== complaintId) return c;
-
-        let nextStatus: ComplaintStatus = 'ADMIN_REPLIED';
-        if (employee) {
-          nextStatus = 'ASSIGNED_EMPLOYEE';
-        }
-
-        const updatedReplacement = { ...c.replacement };
-        if (approveReplacement) {
-          updatedReplacement.required = true;
-          updatedReplacement.status = 'APPROVED';
-          updatedReplacement.approvedBy = 'Admin Operations';
-          if (replacementPartName) {
-            updatedReplacement.partName = replacementPartName;
-          }
-        }
-
-        const updatedRepair = { ...c.repair };
-        if (employee) {
-          updatedRepair.technicianId = employee.id;
-          updatedRepair.technicianName = employee.name;
-          updatedRepair.technicianPhone = employee.phone;
-          updatedRepair.scheduledDate = 'Tomorrow 11:00 AM';
-        }
-
-        return {
-          ...c,
-          status: nextStatus,
-          messages: [...c.messages, newMsg],
-          replacement: updatedReplacement,
-          repair: updatedRepair,
-        };
-      })
-    );
-  };
-
-  const submitEmployeeResolution = (
-    complaintId: string,
-    data: {
-      diagnosticNotes: string;
-      actionTaken: string;
-      replacementDone: boolean;
-      markCompleted: boolean;
-    }
-  ) => {
-    const timeString = 'Just now';
-    const completionNote = data.markCompleted
-      ? `Task marked as COMPLETED. Diagnostics: ${data.diagnosticNotes}. Action: ${data.actionTaken}. Replacement executed: ${data.replacementDone ? 'YES' : 'NO'}.`
-      : `Update logged: ${data.diagnosticNotes}. Action in progress: ${data.actionTaken}`;
-
-    const newMsg: ComplaintMessage = {
-      id: `msg-${Date.now()}`,
-      senderRole: 'EMPLOYEE',
-      senderName: 'Vikram Singh (Technician)',
-      text: completionNote,
-      timestamp: timeString,
-      isActionLog: true,
+      technicianShared,
     };
 
     setComplaints((prev) =>
       prev.map((c) => {
         if (c.id !== complaintId) return c;
 
-        const newStatus: ComplaintStatus = data.markCompleted
-          ? 'REPAIR_REPLACEMENT_DONE'
-          : 'REPAIR_IN_PROGRESS';
-
-        const updatedReplacement = { ...c.replacement };
-        if (data.replacementDone) {
-          updatedReplacement.status = 'INSTALLED';
-        }
-
-        const updatedRepair = {
-          ...c.repair,
-          diagnosticNotes: data.diagnosticNotes || c.repair.diagnosticNotes,
-          actionTaken: data.actionTaken || c.repair.actionTaken,
-          replacementDone: data.replacementDone,
-          completedAt: data.markCompleted ? timeString : undefined,
-        };
+        const updatedStatus = newStatus || (technicianShared ? 'REPAIR_REPLACEMENT_IN_PROGRESS' : 'ADMIN_REPLIED');
 
         return {
           ...c,
-          status: newStatus,
+          status: updatedStatus,
+          sharedTechnician: technicianShared || c.sharedTechnician,
           messages: [...c.messages, newMsg],
-          replacement: updatedReplacement,
-          repair: updatedRepair,
         };
       })
     );
@@ -295,6 +186,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setRole,
         user,
         setUser,
+        userTab,
+        setUserTab,
         currentScreen,
         setCurrentScreen,
         complaints,
@@ -303,12 +196,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activeComplaintId,
         setActiveComplaintId,
         activeComplaint,
-        registerAndLogin,
+        updateUserProfile,
         createComplaint,
         sendUserReply,
         sendAdminReply,
-        submitEmployeeResolution,
-        switchRoleAndNavigate,
+        switchRole,
       }}
     >
       {children}

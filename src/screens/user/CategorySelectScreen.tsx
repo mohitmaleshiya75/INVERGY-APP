@@ -16,55 +16,72 @@ export const CategorySelectScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Step Indicator Banner */}
+        {/* Banner */}
         <View style={styles.bannerCard}>
-          <View style={styles.stepPill}>
-            <Text style={styles.stepPillText}>STEP 1 OF 2</Text>
-          </View>
           <Text style={styles.bannerTitle}>Select Problem Category</Text>
           <Text style={styles.bannerDesc}>
-            Choose the specific issue category so our technical triage team can assign the right specialist and replacement parts.
+            Select the issue that closest matches your problem. Not dependent on any product — if your problem is not listed, choose "Other Problem" to describe it directly.
           </Text>
         </View>
 
         {/* Categories List */}
         <View style={styles.categoriesContainer}>
-          {PROBLEM_CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat.id}
-              style={styles.categoryCard}
-              onPress={() => handleSelectCategory(cat)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.iconWrapper}>
-                  <Ionicons name={cat.icon as any} size={24} color="#0EA5E9" />
-                </View>
-                <View style={styles.cardTitleBox}>
-                  <View style={styles.badgeRow}>
-                    <Text style={styles.categoryBadge}>{cat.badge}</Text>
+          {PROBLEM_CATEGORIES.map((cat) => {
+            const isOther = !!cat.isOther;
+            return (
+              <TouchableOpacity
+                key={cat.id}
+                style={[
+                  styles.categoryCard,
+                  isOther && styles.categoryCardOther,
+                ]}
+                onPress={() => handleSelectCategory(cat)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.cardHeader}>
+                  <View
+                    style={[
+                      styles.iconWrapper,
+                      isOther && { backgroundColor: '#EDE9FE' },
+                    ]}
+                  >
+                    <Ionicons
+                      name={cat.icon as any}
+                      size={24}
+                      color={isOther ? '#8B5CF6' : '#0EA5E9'}
+                    />
                   </View>
-                  <Text style={styles.categoryTitle}>{cat.title}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
-              </View>
-
-              <Text style={styles.categoryDesc}>{cat.description}</Text>
-
-              {/* Common Issues Chips */}
-              <View style={styles.chipsRow}>
-                {cat.commonIssues.map((issue, idx) => (
-                  <View key={idx} style={styles.issueChip}>
-                    <Text style={styles.issueChipText}>• {issue}</Text>
+                  <View style={styles.cardTitleBox}>
+                    <View style={styles.badgeRow}>
+                      <Text
+                        style={[
+                          styles.categoryBadge,
+                          isOther && { color: '#8B5CF6' },
+                        ]}
+                      >
+                        {cat.badge}
+                      </Text>
+                    </View>
+                    <Text style={styles.categoryTitle}>{cat.title}</Text>
                   </View>
-                ))}
-              </View>
+                  <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+                </View>
 
-              <View style={styles.cardFooter}>
-                <Text style={styles.footerAction}>Select & Raise Complaint ➔</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+                <Text style={styles.categoryDesc}>{cat.description}</Text>
+
+                <View style={styles.cardFooter}>
+                  <Text
+                    style={[
+                      styles.footerAction,
+                      isOther && { color: '#8B5CF6' },
+                    ]}
+                  >
+                    {isOther ? 'Clarify Custom Issue ➔' : 'Select Category ➔'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
     </View>
@@ -86,22 +103,8 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  stepPill: {
-    backgroundColor: '#0EA5E9',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  stepPillText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.8,
-  },
   bannerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -126,10 +129,14 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  categoryCardOther: {
+    borderColor: '#C4B5FD',
+    backgroundColor: '#FAF5FF',
+  },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   iconWrapper: {
     width: 44,
@@ -162,26 +169,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#475569',
     lineHeight: 18,
-    marginBottom: 12,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 12,
-  },
-  issueChip: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  issueChipText: {
-    fontSize: 11,
-    color: '#475569',
-    fontWeight: '500',
+    marginBottom: 10,
   },
   cardFooter: {
     borderTopWidth: 1,

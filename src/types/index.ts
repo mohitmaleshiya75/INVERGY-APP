@@ -1,16 +1,18 @@
-﻿export type UserRole = 'END_USER' | 'EMPLOYEE' | 'ADMIN';
+﻿export type UserRole = 'END_USER' | 'ADMIN';
 
 export type PriorityLevel = 'Low' | 'Medium' | 'Urgent' | 'Critical';
 
 export type ComplaintStatus =
-  | 'REGISTERED'               // Complaint raised by user
-  | 'ADMIN_REPLIED'             // Admin replied to complaint
-  | 'ASSIGNED_EMPLOYEE'         // Admin assigned to technician
-  | 'REPAIR_SCHEDULED'          // Field visit scheduled
-  | 'REPLACEMENT_ORDERED'       // Replacement part requested/approved
-  | 'REPAIR_IN_PROGRESS'        // Technician on site repairing
-  | 'REPAIR_REPLACEMENT_DONE'   // Replacement & repair completed
-  | 'RESOLVED';                 // Final closure
+  | 'PENDING_ADMIN_REPLY'               // Raised by user, waiting for Admin
+  | 'ADMIN_REPLIED'                     // Admin replied (may include technician contact)
+  | 'REPAIR_REPLACEMENT_IN_PROGRESS'    // Technician working / parts replacement
+  | 'RESOLVED';                         // Query & repair resolved
+
+export interface TechnicianContact {
+  name: string;
+  phone: string;
+  designation?: string;
+}
 
 export interface ComplaintMessage {
   id: string;
@@ -18,28 +20,7 @@ export interface ComplaintMessage {
   senderName: string;
   text: string;
   timestamp: string;
-  isActionLog?: boolean;
-}
-
-export interface ReplacementInfo {
-  required: boolean;
-  partName: string;
-  partNumber: string;
-  status: 'NOT_REQUIRED' | 'PENDING_ADMIN_APPROVAL' | 'APPROVED' | 'DISPATCHED' | 'INSTALLED';
-  isUnderWarranty: boolean;
-  approvedBy?: string;
-  costEstimate?: string;
-}
-
-export interface RepairInfo {
-  technicianId?: string;
-  technicianName?: string;
-  technicianPhone?: string;
-  scheduledDate?: string;
-  diagnosticNotes?: string;
-  actionTaken?: string;
-  replacementDone?: boolean;
-  completedAt?: string;
+  technicianShared?: TechnicianContact;
 }
 
 export interface ComplaintCategory {
@@ -48,7 +29,7 @@ export interface ComplaintCategory {
   icon: string;
   description: string;
   badge: string;
-  commonIssues: string[];
+  isOther?: boolean;
 }
 
 export interface Complaint {
@@ -56,8 +37,8 @@ export interface Complaint {
   title: string;
   categoryId: string;
   categoryName: string;
-  deviceModel: string;
-  serialNumber: string;
+  customProblemDetails?: string;
+  productDetailsInChat?: string;
   description: string;
   priority: PriorityLevel;
   status: ComplaintStatus;
@@ -65,9 +46,8 @@ export interface Complaint {
   customerName: string;
   customerPhone: string;
   customerAddress: string;
+  sharedTechnician?: TechnicianContact;
   messages: ComplaintMessage[];
-  replacement: ReplacementInfo;
-  repair: RepairInfo;
 }
 
 export interface UserProfile {
@@ -75,7 +55,5 @@ export interface UserProfile {
   email: string;
   phone: string;
   address: string;
-  inverterModel: string;
-  serialNumber: string;
   role: UserRole;
 }

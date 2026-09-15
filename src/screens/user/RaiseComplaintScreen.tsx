@@ -16,35 +16,37 @@ import { PriorityLevel } from '../../types';
 export const RaiseComplaintScreen: React.FC = () => {
   const { selectedCategory, user, createComplaint, setCurrentScreen } = useApp();
 
+  const isOther = !!selectedCategory?.isOther;
+
   const [title, setTitle] = useState(
-    selectedCategory ? `${selectedCategory.title} issue detected` : 'Equipment malfunction'
+    isOther
+      ? 'Custom equipment issue'
+      : selectedCategory
+      ? `${selectedCategory.title} issue`
+      : 'Service Request'
   );
+  const [customProblemDetails, setCustomProblemDetails] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<PriorityLevel>('Urgent');
-  const [deviceModel, setDeviceModel] = useState(user.inverterModel);
-  const [serialNumber, setSerialNumber] = useState(user.serialNumber);
-  const [preferredSlot, setPreferredSlot] = useState('Tomorrow Morning (10 AM - 1 PM)');
   const [attachedPhoto, setAttachedPhoto] = useState(false);
 
   const priorities: PriorityLevel[] = ['Low', 'Medium', 'Urgent', 'Critical'];
-  const slots = [
-    'Today Urgent (Within 3 Hours)',
-    'Tomorrow Morning (10 AM - 1 PM)',
-    'Tomorrow Afternoon (2 PM - 6 PM)',
-  ];
 
   const handleSubmit = () => {
-    if (!description.trim()) {
-      alert('Please enter a brief description of the fault or symptoms.');
+    if (isOther && !customProblemDetails.trim()) {
+      alert('Please specify your problem in the clarification field.');
+      return;
+    }
+    if (!description.trim() && !customProblemDetails.trim()) {
+      alert('Please enter a brief description of the issue.');
       return;
     }
 
     createComplaint({
       title: title.trim(),
-      description: description.trim(),
+      description: description.trim() || customProblemDetails.trim(),
       priority,
-      deviceModel: deviceModel.trim(),
-      serialNumber: serialNumber.trim(),
+      customProblemDetails: isOther ? customProblemDetails.trim() : undefined,
     });
   };
 
@@ -54,17 +56,19 @@ export const RaiseComplaintScreen: React.FC = () => {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Category Badge Header */}
-        <View style={styles.categoryHeader}>
-          <View style={styles.categoryIconCircle}>
+        {/* Selected Category Header */}
+        <View style={[styles.categoryHeader, isOther && { borderColor: '#C4B5FD', backgroundColor: '#FAF5FF' }]}>
+          <View style={[styles.categoryIconCircle, isOther && { backgroundColor: '#EDE9FE' }]}>
             <Ionicons
-              name={selectedCategory ? (selectedCategory.icon as any) : 'alert-circle'}
+              name={selectedCategory ? (selectedCategory.icon as any) : 'help-circle'}
               size={20}
-              color="#0EA5E9"
+              color={isOther ? '#8B5CF6' : '#0EA5E9'}
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.categoryHeaderSub}>SELECTED CATEGORY</Text>
+            <Text style={[styles.categoryHeaderSub, isOther && { color: '#8B5CF6' }]}>
+              {isOther ? 'CUSTOM CATEGORY' : 'SELECTED CATEGORY'}
+            </Text>
             <Text style={styles.categoryHeaderTitle}>
               {selectedCategory ? selectedCategory.title : 'General Equipment Issue'}
             </Text>
@@ -77,13 +81,36 @@ export const RaiseComplaintScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Complaint Form */}
+        {/* Form Card */}
         <View style={styles.formCard}>
-          <Text style={styles.sectionTitle}>File Support & Replacement Ticket</Text>
+          <Text style={styles.sectionTitle}>Raise Support Query / Complaint</Text>
+
+          {/* If "Other Problem", Show Special Clarification Input */}
+          {isOther && (
+            <View style={styles.otherProblemBox}>
+              <View style={styles.otherHeaderRow}>
+                <Ionicons name="create-outline" size={16} color="#7C3AED" />
+                <Text style={styles.otherHeaderTitle}>Clarify Your Problem (Not Listed)</Text>
+              </View>
+              <Text style={styles.otherHeaderDesc}>
+                Describe exactly what you are experiencing so our Admin can understand and respond with the right guidance or technician.
+              </Text>
+              <TextInput
+                style={styles.otherTextArea}
+                value={customProblemDetails}
+                onChangeText={setCustomProblemDetails}
+                placeholder="e.g. Inverter display is flickering and making high pitch click sounds whenever AC is turned on..."
+                placeholderTextColor="#94A3B8"
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+            </View>
+          )}
 
           {/* Ticket Title */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Complaint Summary / Title *</Text>
+            <Text style={styles.label}>Summary / Subject *</Text>
             <TextInput
               style={styles.input}
               value={title}
@@ -93,9 +120,9 @@ export const RaiseComplaintScreen: React.FC = () => {
             />
           </View>
 
-          {/* Priority Selector */}
+          {/* Priority */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Urgency & Impact Level</Text>
+            <Text style={styles.label}>Urgency Level</Text>
             <View style={styles.priorityRow}>
               {priorities.map((p) => {
                 const isSelected = priority === p;
@@ -124,38 +151,14 @@ export const RaiseComplaintScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Device Model & Serial */}
-          <View style={styles.rowTwoCols}>
-            <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Inverter Model</Text>
-              <TextInput
-                style={styles.inputSmall}
-                value={deviceModel}
-                onChangeText={setDeviceModel}
-                placeholder="Model"
-                placeholderTextColor="#94A3B8"
-              />
-            </View>
-            <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Serial Number</Text>
-              <TextInput
-                style={styles.inputSmall}
-                value={serialNumber}
-                onChangeText={setSerialNumber}
-                placeholder="Serial No."
-                placeholderTextColor="#94A3B8"
-              />
-            </View>
-          </View>
-
           {/* Description */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Detailed Description of the Issue *</Text>
+            <Text style={styles.label}>Detailed Description / Symptoms *</Text>
             <TextInput
               style={styles.textArea}
               value={description}
               onChangeText={setDescription}
-              placeholder="Describe symptoms: Any burning smell? Error code on LCD? Did breaker trip? Did backup stop immediately?"
+              placeholder="Describe what happened: Any burning smell? Sudden cutoff? Breaker tripped? (Note: You can provide exact product model or serial number in chat with Admin!)"
               placeholderTextColor="#94A3B8"
               multiline
               numberOfLines={4}
@@ -163,9 +166,9 @@ export const RaiseComplaintScreen: React.FC = () => {
             />
           </View>
 
-          {/* Photo Attachment (Mock) */}
+          {/* Mock Photo Upload */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Attach Photo / Video Proof (Recommended for replacement)</Text>
+            <Text style={styles.label}>Attach Photo (Optional)</Text>
             <TouchableOpacity
               style={[styles.uploadBox, attachedPhoto && styles.uploadBoxAttached]}
               onPress={() => setAttachedPhoto(!attachedPhoto)}
@@ -173,46 +176,18 @@ export const RaiseComplaintScreen: React.FC = () => {
             >
               <Ionicons
                 name={attachedPhoto ? 'checkmark-circle' : 'camera-outline'}
-                size={22}
+                size={20}
                 color={attachedPhoto ? '#10B981' : '#0EA5E9'}
               />
               <Text style={[styles.uploadText, attachedPhoto && { color: '#10B981' }]}>
                 {attachedPhoto
-                  ? 'Photo attached: inverter_error_display.jpg (Tap to remove)'
-                  : 'Tap to upload picture of inverter LCD display or burnt part'}
+                  ? 'Photo attached: issue_photo.jpg (Tap to remove)'
+                  : 'Tap to upload photo of issue or error screen'}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Preferred Service Slot */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Preferred Technician Visit Slot</Text>
-            <View style={styles.slotList}>
-              {slots.map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  style={[styles.slotItem, preferredSlot === s && styles.slotItemSelected]}
-                  onPress={() => setPreferredSlot(s)}
-                >
-                  <Ionicons
-                    name={preferredSlot === s ? 'radio-button-on' : 'radio-button-off'}
-                    size={16}
-                    color={preferredSlot === s ? '#0EA5E9' : '#94A3B8'}
-                  />
-                  <Text
-                    style={[
-                      styles.slotText,
-                      preferredSlot === s && { color: '#0F172A', fontWeight: '700' },
-                    ]}
-                  >
-                    {s}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Customer Address Confirmation */}
+          {/* User Location Info */}
           <View style={styles.addressNotice}>
             <Ionicons name="location" size={16} color="#0EA5E9" />
             <Text style={styles.addressText} numberOfLines={2}>
@@ -220,10 +195,10 @@ export const RaiseComplaintScreen: React.FC = () => {
             </Text>
           </View>
 
-          {/* Submit Action */}
+          {/* Submit CTA */}
           <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} activeOpacity={0.85}>
             <Ionicons name="send" size={18} color="#FFFFFF" />
-            <Text style={styles.submitBtnText}>Raise Complaint & Notify Admin</Text>
+            <Text style={styles.submitBtnText}>Submit & Chat with Admin</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -294,6 +269,41 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     marginBottom: 16,
   },
+  otherProblemBox: {
+    backgroundColor: '#FAF5FF',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E9D5FF',
+    marginBottom: 16,
+  },
+  otherHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  otherHeaderTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#6B21A8',
+  },
+  otherHeaderDesc: {
+    fontSize: 11,
+    color: '#7E22CE',
+    lineHeight: 16,
+    marginBottom: 8,
+  },
+  otherTextArea: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D8B4FE',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 13,
+    color: '#0F172A',
+    height: 70,
+  },
   inputGroup: {
     marginBottom: 14,
   },
@@ -312,20 +322,6 @@ const styles = StyleSheet.create({
     height: 44,
     fontSize: 14,
     color: '#0F172A',
-  },
-  inputSmall: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 10,
-    height: 38,
-    fontSize: 12,
-    color: '#0F172A',
-  },
-  rowTwoCols: {
-    flexDirection: 'row',
-    gap: 10,
   },
   priorityRow: {
     flexDirection: 'row',
@@ -380,27 +376,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
     flex: 1,
-  },
-  slotList: {
-    gap: 8,
-  },
-  slotItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 10,
-    gap: 8,
-    backgroundColor: '#F8FAFC',
-  },
-  slotItemSelected: {
-    borderColor: '#0EA5E9',
-    backgroundColor: '#F0F9FF',
-  },
-  slotText: {
-    fontSize: 12,
-    color: '#64748B',
   },
   addressNotice: {
     flexDirection: 'row',
